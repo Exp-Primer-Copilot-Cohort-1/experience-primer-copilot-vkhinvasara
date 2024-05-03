@@ -1,38 +1,48 @@
-//create web server
-const express = require('express');
-const app = express();
-const bodyParser = require('body-parser');
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true}));
-app.listen(3000, () => {
-  console.log('Server is running at http://localhost:3000');
-});
-//fake data
-let comments = [
-  {id: 1, author: 'John', content: 'A new course is coming!'},
-  {id: 2, author: 'Alice', content: 'Good luck!'},
-  {id: 3, author: 'Kate', content: 'Great!'}
-];
-//get all comments
-app.get('/comments', (req, res) => {
-  res.send(comments);
-});
-//get a comment by id
-app.get('/comments/:id', (req, res) => {
-    let id = req.params.id;
-    let comment = comments.find(comment => comment.id === parseInt(id));
-    if (comment) {
-        res.send(comment);
+// Create a web server
+const http = require('http');
+const fs = require('fs');
+const url = require('url');
+const path = require('path');
+const comments = [];
+
+const server = http.createServer((req, res) => {
+    let urlObj = url.parse(req.url, true);
+    let pathname = urlObj.pathname;
+    if (pathname === '/') {
+        fs.readFile(path.join(__dirname, 'index.html'), 'utf8', (err, data) => {
+            if (err) {
+                res.writeHead(500, {
+                    'Content-Type': 'text/plain'
+                });
+                res.end('Server Error');
+            }
+            res.writeHead(200, {
+                'Content-Type': 'text/html'
+            });
+            res.end(data);
+        });
+    } else if (pathname === '/comment') {
+        let comment = urlObj.query;
+        comments.push(comment);
+        res.writeHead(200, {
+            'Content-Type': 'text/plain'
+        });
+        res.end(JSON.stringify(comments));
     } else {
-        res.send('Comment not found');
+        fs.readFile(path.join(__dirname, pathname), 'utf8', (err, data) => {
+            if (err) {
+                res.writeHead(404, {
+                    'Content-Type': 'text/plain'
+                });
+                res.end('Not Found');
+            }
+            res.writeHead(200, {
+                'Content-Type': 'text/plain'
+            });
+            res.end(data);
+        });
     }
 });
-//add a new comment
-app.post('/comments', (req, res) => {
-    let comment = {
-        id: comments.length + 1,
-    };
-    comments.push(comment);
-    res.send(comment);
-});
-    
+
+server.listen(3000, () => {
+    console.log('Server is running at http://
